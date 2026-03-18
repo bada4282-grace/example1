@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>월별 수출 실적 데이터 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #020617;
+      --card: #020617;
+      --card-soft: #02081f;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79,70,229,0.15);
+      --accent-strong: #6366f1;
+      --text: #e5e7eb;
+      --text-soft: #9ca3af;
+      --border-subtle: rgba(148, 163, 184, 0.3);
+      --danger: #f97373;
+      --success: #22c55e;
+      --shadow-soft: 0 22px 45px rgba(15,23,42,0.85);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Pretendard", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1e293b 0, #020617 42%, #020617 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px clamp(16px, 4vw, 40px);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .shell {
+      max-width: 1320px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      padding: 18px 22px;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: radial-gradient(circle at top left, rgba(148,163,184,0.18), rgba(15,23,42,0.96));
+      box-shadow: 0 24px 80px rgba(15,23,42,0.8);
+      backdrop-filter: blur(18px);
+    }
+
+    .header-main {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.5), transparent);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #4ade80;
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25);
+    }
+
+    .title {
+      font-size: clamp(22px, 2.1vw, 26px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-emphasis {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: rgba(15,118,110,0.16);
+      border: 1px solid rgba(45,212,191,0.4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a5f3fc;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .header-meta {
+      display: flex;
+      gap: 16px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .meta-pill {
+      min-width: 160px;
+      padding: 10px 14px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: linear-gradient(135deg, rgba(15,23,42,0.4), rgba(15,23,42,0.1));
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-soft);
+    }
+
+    .meta-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .meta-pill.accent {
+      border-color: rgba(129, 140, 248, 0.8);
+      background: radial-gradient(circle at top left, rgba(79,70,229,0.5), rgba(15,23,42,0.9));
+      box-shadow: 0 18px 45px rgba(79,70,229,0.55);
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .card-h2 {
+      grid-column: 1 / -1;
+      min-height: 0;  /* 여유 높이를 모두 제거하고 컨텐츠에만 맞춤 */
+      padding-top: 18px;
+      padding-bottom: 12px;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.3), rgba(15,23,42,1));
+      border-color: rgba(56,189,248,0.85);
+      box-shadow: 0 24px 60px rgba(8,47,73,0.9);
+    }
+
+    .card {
+      position: relative;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top left, rgba(30,64,175,0.2), rgba(15,23,42,1));
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(79,70,229,0.35), transparent 55%);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-soft);
+      background: rgba(15,23,42,0.7);
+    }
+
+    .card-description {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .mom-highlight {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(5,46,22,0.8), rgba(15,23,42,0.9));
+      border: 1px solid rgba(34,197,94,0.65);
+    }
+
+    .mom-main-value {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mom-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #bbf7d0;
+    }
+
+    .mom-value {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: #ecfdf5;
+    }
+
+    .mom-period {
+      font-size: 11px;
+      color: #a7f3d0;
+    }
+
+    .mom-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(22,163,74,0.18);
+      border: 1px solid rgba(74,222,128,0.75);
+      font-size: 11px;
+      color: #bbf7d0;
+    }
+
+    .mom-chip.down {
+      background: rgba(185,28,28,0.18);
+      border-color: rgba(248,113,113,0.8);
+      color: #fee2e2;
+    }
+
+    .arrow-up {
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 7px solid #22c55e;
+      width: 0;
+      height: 0;
+    }
+
+    .arrow-down {
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #f97373;
+      width: 0;
+      height: 0;
+    }
+
+    .mom-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .mom-item {
+      border-radius: 14px;
+      padding: 8px 9px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(55,65,81,0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+      cursor: default;
+    }
+
+    .mom-item:hover {
+      transform: translateY(-2px) translateZ(0);
+      box-shadow: 0 16px 35px rgba(15,23,42,0.9);
+      border-color: rgba(129,140,248,0.9);
+    }
+
+    .mom-item-name {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .mom-item-value {
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .mom-item-dir.up {
+      color: var(--success);
+    }
+
+    .mom-item-dir.down {
+      color: var(--danger);
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 260px;
+    }
+
+    .chart-container-sm {
+      height: 200px;
+    }
+
+    .legend-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      margin-right: 4px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(55,65,81,0.9);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+    }
+
+    .legend-item.inactive {
+      opacity: 0.4;
+      border-color: rgba(55,65,81,0.6);
+      background: rgba(15,23,42,0.6);
+    }
+
+    .legend-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(129,140,248,0.8);
+    }
+
+    .country-meta-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .country-meta-item {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .pill-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15,23,42,0.7);
+    }
+
+    .pill-trend.growth {
+      border-color: rgba(34,197,94,0.8);
+      background: linear-gradient(135deg, rgba(22,163,74,0.35), rgba(15,23,42,0.95));
+      color: #bbf7d0;
+    }
+
+    .pill-trend.decline {
+      border-color: rgba(248,113,113,0.8);
+      background: linear-gradient(135deg, rgba(185,28,28,0.3), rgba(15,23,42,0.95));
+      color: #fee2e2;
+    }
+
+    .pill-trend.stable {
+      border-color: rgba(148,163,184,0.75);
+      background: linear-gradient(135deg, rgba(15,23,42,0.9), rgba(15,23,42,0.95));
+      color: #e5e7eb;
+    }
+
+    .rec-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .rec-card {
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.22), rgba(15,23,42,0.95));
+      border: 1px solid rgba(56,189,248,0.8);
+      padding: 12px 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      box-shadow: 0 20px 35px rgba(8,47,73,0.7);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+      cursor: default;
+    }
+
+    .rec-card:hover {
+      transform: translateY(-3px) translateZ(0);
+      box-shadow: 0 26px 50px rgba(8,47,73,0.9);
+      border-color: rgba(56,189,248,1);
+    }
+
+    .rec-country {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .rec-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-soft);
+    }
+
+    .rec-region-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(56,189,248,0.7);
+      background: rgba(8,47,73,0.9);
+      font-size: 10px;
+      color: #e0f2fe;
+    }
+
+    .rec-region-pill span:first-child {
+      font-weight: 500;
+    }
+
+    .rec-score-tag {
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.55);
+      font-size: 10px;
+      color: var(--text-soft);
+    }
+
+    .rec-reasons {
+      font-size: 11px;
+      color: #e5e7eb;
+      padding-left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .rec-reasons li {
+      list-style: none;
+      position: relative;
+      padding-left: 10px;
+    }
+
+    .rec-reasons li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(56,189,248,0.8);
+    }
+
+    @media (max-width: 1080px) {
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+      .mom-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .rec-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 18px 12px;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header-meta {
+        width: 100%;
+      }
+      .country-meta-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .rec-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="header">
+      <div class="header-main">
+        <div class="badge">
+          <span class="pulse-dot"></span>
+          <span>Export Performance • Live Snapshot</span>
+        </div>
+        <div class="title">
+          월별 수출 실적 인사이트 대시보드
+          <span class="title-emphasis">H2 전략 초점</span>
+        </div>
+        <p class="subtitle">
+          월별·국가별 수출 실적을 기반으로 전월 대비 변동, 국가별 추세, 그리고 하반기 집중 공략 시장을 한 눈에 제공합니다.
+        </p>
+      </div>
+      <div class="header-meta">
+        <div class="meta-pill accent">
+          <span class="meta-label">데이터 기간</span>
+          <span class="meta-value">2024-01 ~ 2026-03</span>
+        </div>
+        <div class="meta-pill">
+          <span class="meta-label">마지막 월</span>
+          <span class="meta-value">2026-03</span>
+        </div>
+        <div class="meta-pill">
+          <span class="meta-label">거래 수</span>
+          <span class="meta-value">500 rows</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout-grid">
+      <article class="card">
+          <div class="card-inner">
+            <header class="card-header">
+              <div>
+                <h2 class="card-title">
+                  MoM Top 3 변동 품목/국가
+                  <span class="chip">Month over Month Δ</span>
+                </h2>
+                <p class="card-description">
+                  마지막 월(2026-03) 기준 전월(2026-02) 대비 금액 변동이 가장 큰 상위 3개 품목·국가 조합입니다.
+                </p>
+              </div>
+            </header>
+
+            <div class="mom-highlight">
+              <div class="mom-main-value">
+                <span class="mom-label">가장 큰 절대 변동</span>
+                <div class="mom-value">
+                  4,068,714 USD
+                </div>
+                <span class="mom-period">
+                  포장재
+                </span>
+              </div>
+              <div>
+                
+                <div class="mom-chip ">
+                  <span class="arrow-up"></span>
+                  <span>
+                    +4,068,714 USD (2212.8%)
+                  </span>
+                </div>
+                
+              </div>
+            </div>
+
+            <div class="chart-container chart-container-sm">
+              <canvas id="momBarChart"></canvas>
+            </div>
+
+            <div class="mom-list" id="momList"></div>
+          </div>
+        </article>
+
+      <article class="card">
+          <div class="card-inner">
+            <header class="card-header">
+              <div>
+                <h2 class="card-title">
+                  국가별 월간 수출 추이
+                  <span class="chip">Country Time Series</span>
+                </h2>
+                <p class="card-description">
+                  상위 국가의 월별 수출 금액 변화를 한 번에 비교합니다. 라인 위에 마우스를 올려 국가별 세부 값을 확인할 수 있습니다.
+                </p>
+              </div>
+            </header>
+
+            <div class="chart-container">
+              <canvas id="countryLineChart"></canvas>
+            </div>
+
+            <div class="legend-inline" id="countryLegend"></div>
+
+            <div class="country-meta-list">
+              <div class="country-meta-item">
+                · 분석 국가 수: <strong>25</strong>
+              </div>
+              <div class="country-meta-item">
+                · 성장 국가 비중: <strong>4.0%</strong>
+              </div>
+              <div class="country-meta-item">
+                · 감소/조정 국가는 포트폴리오 리밸런싱 후보로 볼 수 있습니다.
+              </div>
+            </div>
+          </div>
+        </article>
+
+      <article class="card card-h2">
+          <div class="card-inner">
+            <header class="card-header">
+              <div>
+                <h2 class="card-title">
+                  H2 집중 공략 추천 국가
+                  <span class="chip">Focus Markets for H2</span>
+                </h2>
+                <p class="card-description">
+                  최근 수개월의 실적 규모, 성장률, 변동성을 종합해 하반기(H2)에 전략적으로 집중할 만한 2~3개 주요 국가를 제안합니다.
+                </p>
+              </div>
+            </header>
+
+            <div class="rec-grid" id="recGrid"></div>
+          </div>
+        </article>
+    </section>
+  </main>
+
+  <script>
+    const momLabels = ["포장재", "전자부품", "IT장비"];
+    const momValues = [4068714, 1848925, -1092805];
+    const momChangePct = [2212.7969457013573, 371.24100723035747, -60.766720363708956];
+    const momSummary = [{"item": "포장재", "direction": "상승", "abs_change": 4068714.0, "change_pct": 2212.7969457013573}, {"item": "전자부품", "direction": "상승", "abs_change": 1848925.0, "change_pct": 371.24100723035747}, {"item": "IT장비", "direction": "감소", "abs_change": 1092805.0, "change_pct": -60.766720363708956}];
+
+    const tsLabels = ["2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03"];
+    const tsDatasets = [{"label": "UAE", "data": [854653.0, 887529.0, 0.0, 0.0, 2718819.0, 2632779.0, 2061792.0, 0.0, 0.0, 103566.0, 0.0, 3748260.0, 161052.0, 0.0, 1766378.0, 0.0, 3126353.0, 2713176.0, 930530.0, 4500185.0, 0.0, 142008.0, 610306.0, 0.0, 0.0, 3606557.0, 305924.0], "borderColor": "#4F46E5", "backgroundColor": "#4F46E5", "tension": 0.25, "fill": false}, {"label": "네덜란드", "data": [555000.0, 1382407.0, 0.0, 0.0, 0.0, 1138973.0, 4481331.0, 969210.0, 3177527.0, 0.0, 0.0, 5105601.0, 517080.0, 0.0, 4662880.0, 1563595.0, 4863175.0, 1997931.0, 499895.0, 3629748.0, 1333438.0, 0.0, 2398253.0, 691423.0, 4265626.0, 0.0, 0.0], "borderColor": "#10B981", "backgroundColor": "#10B981", "tension": 0.25, "fill": false}, {"label": "싱가포르", "data": [113309.0, 0.0, 1876747.0, 0.0, 1522300.0, 2641912.0, 2149979.0, 0.0, 378225.0, 598849.0, 0.0, 0.0, 132621.0, 0.0, 198778.0, 0.0, 0.0, 8547112.0, 3525084.0, 1429417.0, 1799627.0, 0.0, 2249946.0, 0.0, 917643.0, 0.0, 0.0], "borderColor": "#F97316", "backgroundColor": "#F97316", "tension": 0.25, "fill": false}, {"label": "인도네시아", "data": [675882.0, 3483573.0, 9432071.0, 1609309.0, 0.0, 2375351.0, 0.0, 641078.0, 0.0, 1223010.0, 4808803.0, 0.0, 210994.0, 0.0, 1662867.0, 0.0, 65288.0, 5052943.0, 3249494.0, 2058713.0, 1176562.0, 5676664.0, 3077717.0, 0.0, 0.0, 334638.0, 1975893.0], "borderColor": "#EF4444", "backgroundColor": "#EF4444", "tension": 0.25, "fill": false}, {"label": "일본", "data": [1570714.0, 621049.0, 0.0, 0.0, 0.0, 0.0, 2132771.0, 2993008.0, 0.0, 2013430.0, 343220.0, 0.0, 3335481.0, 1080666.0, 0.0, 6782339.0, 951512.0, 0.0, 0.0, 3120996.0, 0.0, 642510.0, 2226548.0, 4305301.0, 4564618.0, 1527824.0, 645247.0], "borderColor": "#06B6D4", "backgroundColor": "#06B6D4", "tension": 0.25, "fill": false}, {"label": "태국", "data": [1102705.0, 0.0, 0.0, 1692117.0, 1482452.0, 0.0, 4802386.0, 0.0, 2357337.0, 206952.0, 0.0, 678457.0, 2575636.0, 0.0, 687057.0, 468119.0, 5071461.0, 1403556.0, 777881.0, 0.0, 596486.0, 1394828.0, 0.0, 0.0, 0.0, 0.0, 2746596.0], "borderColor": "#8B5CF6", "backgroundColor": "#8B5CF6", "tension": 0.25, "fill": false}, {"label": "폴란드", "data": [8003980.0, 0.0, 1927190.0, 0.0, 0.0, 4037636.0, 0.0, 883786.0, 1100946.0, 0.0, 1766839.0, 0.0, 0.0, 0.0, 1056350.0, 0.0, 542256.0, 615199.0, 0.0, 1792618.0, 102579.0, 2149871.0, 0.0, 2203000.0, 0.0, 79186.0, 2002380.0], "borderColor": "#EC4899", "backgroundColor": "#EC4899", "tension": 0.25, "fill": false}, {"label": "호주", "data": [2215685.0, 5978722.0, 0.0, 380408.0, 1116214.0, 0.0, 0.0, 2642956.0, 3423228.0, 0.0, 1500552.0, 1177413.0, 628452.0, 0.0, 2448733.0, 730255.0, 1065468.0, 0.0, 27975.0, 0.0, 639004.0, 1504038.0, 0.0, 1211802.0, 0.0, 133173.0, 4365424.0], "borderColor": "#22C55E", "backgroundColor": "#22C55E", "tension": 0.25, "fill": false}];
+
+    const h2Recommendations = [{"country": "말레이시아", "trend": "안정", "region": "Asia", "region_weight": 1.1, "score_adj": 0.7471880145301171, "reasons": ["최근 6개월 수출 규모: 약 8.88M USD", "최근 성장률: 360.0%", "변동성(표준편차/평균): 74.0%", "장기 추세: 안정"]}, {"country": "터키", "trend": "안정", "region": "Asia", "region_weight": 1.1, "score_adj": 0.7116517649886611, "reasons": ["최근 6개월 수출 규모: 약 7.28M USD", "최근 성장률: 159.8%", "변동성(표준편차/평균): 64.3%", "장기 추세: 안정"]}, {"country": "네덜란드", "trend": "안정", "region": "Europe", "region_weight": 1.0, "score_adj": 0.6411060237951242, "reasons": ["최근 6개월 수출 규모: 약 7.36M USD", "최근 성장률: 77.9%", "변동성(표준편차/평균): 68.4%", "장기 추세: 안정"]}];
+
+    function formatUsd(value) {
+      return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function buildMomList() {
+      const container = document.getElementById('momList');
+      container.innerHTML = '';
+      momSummary.forEach((row) => {
+        const item = document.createElement('div');
+        item.className = 'mom-item';
+        const dirClass = row.direction === '상승' ? 'up' : 'down';
+        const sign = row.direction === '상승' ? '+' : '';
+        const pctText = row.change_pct !== null
+          ? ' (' + row.change_pct.toFixed(1) + '%)'
+          : '';
+        item.innerHTML = `
+          <div class="mom-item-name">${row.item}</div>
+          <div class="mom-item-value">
+            <span class="mom-item-dir ${dirClass}">
+              ${row.direction}
+            </span>
+            <span>
+              ${sign}${formatUsd(row.abs_change)} USD${pctText}
+            </span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function buildRecCards() {
+      const grid = document.getElementById('recGrid');
+      grid.innerHTML = '';
+      h2Recommendations.forEach((rec) => {
+        const card = document.createElement('div');
+        card.className = 'rec-card';
+        let trendClass = 'stable';
+        if (rec.trend === '성장') trendClass = 'growth';
+        else if (rec.trend === '감소') trendClass = 'decline';
+
+        const reasonsHtml = rec.reasons.map((r) => `<li>${r}</li>`).join('');
+        const regionLabel = rec.region || 'N/A';
+        const regionWeight = typeof rec.region_weight === 'number'
+          ? '×' + rec.region_weight.toFixed(2)
+          : '';
+        const scoreText = typeof rec.score_adj === 'number'
+          ? '종합 점수: ' + (rec.score_adj * 100).toFixed(1) + ' / 100'
+          : '';
+
+        card.innerHTML = `
+          <div class="rec-country">
+            <span>${rec.country}</span>
+            <span class="pill-trend ${trendClass}">${rec.trend}</span>
+          </div>
+          <div class="rec-meta-row">
+            <div class="rec-region-pill">
+              <span>${regionLabel}</span>
+              <span>${regionWeight}</span>
+            </div>
+            <span class="rec-score-tag">${scoreText}</span>
+          </div>
+          <ul class="rec-reasons">
+            ${reasonsHtml}
+          </ul>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function createMomBarChart() {
+      const ctx = document.getElementById('momBarChart').getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+      gradient.addColorStop(0, 'rgba(129,140,248,0.95)');
+      gradient.addColorStop(1, 'rgba(129,140,248,0.15)');
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: momLabels,
+          datasets: [{
+            data: momValues,
+            backgroundColor: (ctx) => {
+              const value = ctx.raw || 0;
+              return value >= 0 ? 'rgba(52,211,153,0.6)' : 'rgba(248,113,113,0.6)';
+            },
+            borderRadius: 12,
+            borderSkipped: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.95)',
+              borderColor: 'rgba(148,163,184,0.5)',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: (ctx) => {
+                  const value = ctx.raw || 0;
+                  const pct = momChangePct[ctx.dataIndex];
+                  const pctText = pct === null
+                    ? ''
+                    : ' (' + pct.toFixed(1) + '%)';
+                  const sign = value >= 0 ? '+' : '';
+                  return sign + formatUsd(value) + ' USD' + pctText;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false,
+              },
+              ticks: {
+                color: '#9ca3af',
+                font: {
+                  size: 10,
+                },
+              },
+            },
+            y: {
+              grid: {
+                color: 'rgba(55,65,81,0.8)',
+                drawBorder: false,
+              },
+              ticks: {
+                color: '#9ca3af',
+                callback: (value) => {
+                  return formatUsd(value);
+                },
+                font: {
+                  size: 10,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function createCountryLineChart() {
+      const ctx = document.getElementById('countryLineChart').getContext('2d');
+      const legend = document.getElementById('countryLegend');
+
+      // 초기에는 모든 국가를 활성 상태로 두되, 범례 클릭으로 개별 토글
+      const activeMap = {};
+      tsDatasets.forEach((ds) => {
+        activeMap[ds.label] = true;
+      });
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: tsLabels,
+          datasets: tsDatasets.map((ds) => ({
+            ...ds,
+            pointRadius: 2.5,
+            pointHoverRadius: 4,
+          })),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.95)',
+              borderColor: 'rgba(148,163,184,0.6)',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: (ctx) => {
+                  const label = ctx.dataset.label || '';
+                  const value = ctx.raw || 0;
+                  return `${label}: ${formatUsd(value)} USD`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: {
+                color: 'rgba(30,64,175,0.35)',
+                drawBorder: false,
+              },
+              ticks: {
+                color: '#9ca3af',
+                maxRotation: 0,
+                autoSkipPadding: 12,
+                font: {
+                  size: 10,
+                },
+              },
+            },
+            y: {
+              grid: {
+                color: 'rgba(55,65,81,0.85)',
+                drawBorder: false,
+              },
+              ticks: {
+                color: '#9ca3af',
+                callback: (value) => formatUsd(value),
+                font: {
+                  size: 10,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      legend.innerHTML = '';
+      chart.data.datasets.forEach((ds, index) => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        const dot = document.createElement('span');
+        dot.className = 'legend-dot';
+        dot.style.backgroundColor = ds.borderColor;
+        const label = document.createElement('span');
+        label.textContent = ds.label;
+        item.appendChild(dot);
+        item.appendChild(label);
+        legend.appendChild(item);
+
+        // 클릭 시 해당 국가 라인 표시/숨김 토글
+        item.addEventListener('click', () => {
+          const current = activeMap[ds.label];
+          activeMap[ds.label] = !current;
+
+          chart.isDatasetVisible(index)
+            ? chart.hide(index)
+            : chart.show(index);
+
+          if (activeMap[ds.label]) {
+            item.classList.remove('inactive');
+          } else {
+            item.classList.add('inactive');
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      buildMomList();
+      buildRecCards();
+      createMomBarChart();
+      createCountryLineChart();
+    });
+  </script>
+</body>
+</html>
